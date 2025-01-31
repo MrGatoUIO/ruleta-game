@@ -1,0 +1,89 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+#ruleta-container {
+    position: relative;
+    display: inline-block;
+}
+
+#ruleta {
+    width: 300px;
+    height: 300px;
+    border: 10px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+}
+
+.sector {
+    width: 50%;
+    height: 50%;
+    position: absolute;
+    transform-origin: 100% 100%;
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+#pointer {
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 40px solid red;
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+    0% { transform: translateX(-50%) translateY(0); }
+    100% { transform: translateX(-50%) translateY(-10px); }
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    font-size: 30px;
+    display: none;
+    text-align: center;
+    transition: transform 0.5s ease;
+}
+
+.popup button {
+    margin-top: 20px;
+    padding: 15px 30px;
+    font-size: 20px;
+    cursor: pointer;
+    background: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button {
+    padding: 15px 30px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    margin-top: 20px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}

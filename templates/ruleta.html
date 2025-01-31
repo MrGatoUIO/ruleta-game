@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ruleta.css') }}">
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+    <style>
+        #ruleta {
+            transition: transform 3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ruleta de la Suerte</h1>
+    <br>
+    <br>
+    <div id="ruleta-container">
+        <div id="pointer"></div>
+        <div id="ruleta">
+            {% for i in range(8) %}
+                <div class="sector" style="transform: rotate({{ i * 45 }}deg); background-color: {{ ['#FFD700', '#FF4500', '#1E90FF', '#32CD32', '#FF69B4', '#8A2BE2', '#FF6347', '#4682B4'][i] }};">
+                    <span class="sector-text"></span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <br>
+    <button onclick="girarRuleta()">Girar</button>
+    
+    <div id="popup" class="popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 40px; border-radius: 10px; text-align: center; font-size: 24px; z-index: 1000;">
+        <div>
+            <p id="popup-message"></p>
+        </div>
+        <button style="margin-left: 20px;" onclick="cerrarPopup()">Aceptar</button>
+    </div>
+    
+    <script>
+        let currentRotation = 0;
+        let sectores = {{ variables_ruleta | tojson }};
+
+        function girarRuleta() {
+            fetch('/girar', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    let index = sectores.indexOf(data.variable);
+                    let gradosPorSector = 360 / sectores.length;
+                    let nuevaRotacion = (360 - (index * gradosPorSector)) + (5 * 360);
+                    currentRotation += nuevaRotacion;
+                    
+                    let ruleta = document.getElementById("ruleta");
+                    ruleta.style.transition = "transform 3s ease-out";
+                    ruleta.style.transform = `rotate(${currentRotation}deg)`;
+                    
+                    setTimeout(() => mostrarPopup(data.variable), 3000);
+                });
+        }
+        
+        function mostrarPopup(variable) {
+            let popup = document.getElementById('popup');
+            let popupMessage = document.getElementById('popup-message');
+            popupMessage.textContent = variable;
+            popup.style.display = 'flex';
+        }
+        
+        function cerrarPopup() {
+            document.getElementById('popup').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
