@@ -106,5 +106,10 @@ def validar_ganador():
     else:
         return jsonify({'message': 'Vuelve a intentarlo, tu puedes!.', 'ganador': False})
 
+@app.route('/resultados', methods=['GET'])
+def obtener_resultados():
+    """Devuelve la lista de resultados almacenados"""
+    return jsonify(leer_resultados())
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
