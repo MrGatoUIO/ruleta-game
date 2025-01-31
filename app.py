@@ -81,13 +81,22 @@ def estudiante():
 
 @app.route('/girar', methods=['POST'])
 def girar_ruleta():
-    """Selecciona una variable aleatoria y la guarda"""
-    variable = random.choice(VARIABLES_RULETA)
+    """Selecciona una variable aleatoria y la guarda sin repetir"""
     with open(RESULTADOS_FILE, 'r') as f:
         data = json.load(f)
-    data.append(variable)
+
+    # Filtrar las variables que aún no han salido
+    opciones_disponibles = [var for var in VARIABLES_RULETA if var not in data]
+
+    if not opciones_disponibles:
+        return jsonify({'message': 'Todas las Emociones ya han salido.', 'variable': None}), 400
+
+    variable = random.choice(opciones_disponibles)  # Elegir una variable que no haya salido
+    data.append(variable)  # Guardar en la lista de resultados
+
     with open(RESULTADOS_FILE, 'w') as f:
         json.dump(data, f, indent=4)
+
     return jsonify({'variable': variable})
 
 @app.route('/validar-ganador', methods=['POST'])
