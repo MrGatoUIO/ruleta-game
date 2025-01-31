@@ -107,6 +107,10 @@ def validar_ganador():
     data = request.get_json()
     respuestas_seleccionadas = set(data.get('respuestas', []))  # Respuestas elegidas por el estudiante
 
+    if len(respuestas_seleccionadas) != 25:
+        return jsonify({'message': 'Debes seleccionar todas las respuestas.', 'ganador': False})
+
+    
     # Cargar las variables obtenidas en la ruleta
     with open(RESULTADOS_FILE, 'r') as f:
         variables_salidas = set(json.load(f))  # Variables que salieron en la ruleta
