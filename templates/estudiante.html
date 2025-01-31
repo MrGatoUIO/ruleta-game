@@ -43,11 +43,18 @@
             align-items: center;
             justify-content: center;
             height: 80px;
+            overflow: hidden;
+            word-wrap: break-word;
+        }
+
+        .bingo-cell:hover {
+            transform: scale(1.05);
         }
 
         .bingo-cell.selected {
             background: linear-gradient(135deg, #ff4500, #ffcc00);
             color: white;
+            transform: scale(0.95);
         }
 
         button {
@@ -96,6 +103,16 @@
             width: 80%;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
+
+        .popup-content.ganador {
+            background: linear-gradient(135deg, #4caf50, #81c784);
+            color: white;
+        }
+
+        .popup-content.perdedor {
+            background: linear-gradient(135deg, #f44336, #e57373);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -103,8 +120,8 @@
     <div class="bingo-container" id="bingoBoard"></div>
     <button onclick="validarBingo()">Validar Bingo</button>
 
-    <div id="popup" class="popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 40px; border-radius: 10px; text-align: center; font-size: 24px; z-index: 1000;">
-        <div class="popup-content">
+    <div id="popup" class="popup">
+        <div class="popup-content" id="popup-content">
             <p id="popup-message"></p>
             <button onclick="cerrarPopup()">Aceptar</button>
         </div>
@@ -160,8 +177,15 @@
 
         function mostrarPopup(mensaje, gano) {
             const popup = document.getElementById('popup');
+            const popupContent = document.getElementById('popup-content');
             const popupMessage = document.getElementById('popup-message');
             popupMessage.textContent = mensaje;
+            popupContent.classList.remove('ganador', 'perdedor');
+            if (gano) {
+                popupContent.classList.add('ganador');
+            } else {
+                popupContent.classList.add('perdedor');
+            }
             popup.classList.add('show');
             popup.style.display = 'flex';
         }
