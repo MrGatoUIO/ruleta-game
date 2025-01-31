@@ -105,17 +105,27 @@ def girar_ruleta():
 def validar_ganador():
     """Valida si el estudiante ha seleccionado correctamente las respuestas"""
     data = request.get_json()
-    respuestas_seleccionadas = set(data.get('respuestas', []))
+    respuestas_seleccionadas = set(data.get('respuestas', []))  # Respuestas elegidas por el estudiante
 
+    # Cargar las variables obtenidas en la ruleta
     with open(RESULTADOS_FILE, 'r') as f:
-        variables_salidas = set(json.load(f))
+        variables_salidas = set(json.load(f))  # Variables que salieron en la ruleta
 
-    respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas}
+    # Convertir las variables en respuestas correctas
+    respuestas_correctas = {
+        RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)]
+        for var in variables_salidas if var in VARIABLES_RULETA
+    }
 
-    if respuestas_seleccionadas == respuestas_correctas:
-        return jsonify({'message': f'Felicitaciones sigue preparandote!', 'ganador': True})
+    print(f"🟢 Respuestas seleccionadas: {respuestas_seleccionadas}")
+    print(f"🔵 Respuestas correctas esperadas: {respuestas_correctas}")
+
+    # Verificar si todas las respuestas del estudiante están dentro de las respuestas correctas
+    if respuestas_seleccionadas.issubset(respuestas_correctas):  
+        return jsonify({'message': '¡Felicitaciones sigue preparándote!', 'ganador': True})
     else:
-        return jsonify({'message': 'Vuelve a intentarlo, tu puedes!.', 'ganador': False})
+        return jsonify({'message': 'Vuelve a intentarlo, ¡tú puedes!', 'ganador': False})
+
 
 def leer_resultados():
     """Lee los resultados almacenados en resultados.json"""
