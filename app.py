@@ -1,10 +1,12 @@
 import os
 import json
+from flask_cors import CORS
 from flask import Flask, request, jsonify, render_template
 import random
 
 app = Flask(__name__)
 
+CORS(app)
 # Obtener la ruta absoluta del directorio del script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTADOS_FILE = os.path.join(BASE_DIR, 'resultados.json')
