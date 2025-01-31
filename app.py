@@ -106,6 +106,13 @@ def validar_ganador():
     else:
         return jsonify({'message': 'Vuelve a intentarlo, tu puedes!.', 'ganador': False})
 
+def leer_resultados():
+    """Lee los resultados almacenados en resultados.json"""
+    if os.path.exists(RESULTADOS_FILE):
+        with open(RESULTADOS_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
 @app.route('/resultados', methods=['GET'])
 def obtener_resultados():
     """Devuelve la lista de resultados almacenados"""
