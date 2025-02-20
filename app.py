@@ -150,6 +150,42 @@ def aceptar_estudiante():
     reiniciar_archivo(ESTUDIANTES_FILE, estudiantes)
     return jsonify({'message': f'Estudiante {nombre} aceptado'})
 
+def guardar_tarjeta_estudiante(nombre, opciones):
+    """Guarda la tarjeta generada para un estudiante específico."""
+    estudiantes_tarjetas = {}
+
+    if os.path.exists(BINGO_ESTUDIANTES_FILE):
+        with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
+            estudiantes_tarjetas = json.load(f)
+
+    estudiantes_tarjetas[nombre] = opciones
+
+    with open(BINGO_ESTUDIANTES_FILE, 'w') as f:
+        json.dump(estudiantes_tarjetas, f, indent=4)
+
+@app.route('/obtener-tarjeta', methods=['POST'])
+def obtener_tarjeta():
+    """Devuelve la tarjeta asignada a un estudiante o la genera si no existe."""
+    data = request.get_json()
+    nombre = data.get('estudiante')
+
+    if not nombre:
+        return jsonify({'message': 'Nombre de estudiante requerido'}), 400
+
+    estudiantes_tarjetas = {}
+    if os.path.exists(BINGO_ESTUDIANTES_FILE):
+        with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
+            estudiantes_tarjetas = json.load(f)
+
+    if nombre in estudiantes_tarjetas:
+        return jsonify({'tarjeta': estudiantes_tarjetas[nombre]})
+
+    # Generar nueva tarjeta si no existe
+    tarjeta = random.sample(RESPUESTAS_TABLA, 15)
+    guardar_tarjeta_estudiante(nombre, tarjeta)
+
+    return jsonify({'tarjeta': tarjeta})
+
 @app.route('/obtener-marcador', methods=['GET'])
 def obtener_marcador():
     """Devuelve la lista de estudiantes con su estado y puntaje"""
