@@ -11,6 +11,7 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTADOS_FILE = os.path.join(BASE_DIR, 'resultados.json')
 ESTUDIANTES_FILE = os.path.join(BASE_DIR, 'estudiantes.json')
+BINGO_ESTUDIANTES_FILE = os.path.join(BASE_DIR, 'bingo_estudiantes.json')
 
 # Variables de la ruleta
 
@@ -78,11 +79,17 @@ def reiniciar_estudiantes():
     with open(ESTUDIANTES_FILE, 'w') as f:
         json.dump([], f, indent=4)
 
+def reiniciar_tarjetas():
+    """Elimina el archivo bingo_estudiantes.json para reiniciar el juego."""
+    if os.path.exists(BINGO_ESTUDIANTES_FILE):
+        os.remove(BINGO_ESTUDIANTES_FILE)
+
 @app.route('/ruleta')
 def ruleta():
-    """Carga la ruleta y reinicia los resultados y la lista de estudiantes"""
+    """Carga la ruleta y reinicia los datos del juego"""
     reiniciar_resultados()
     reiniciar_estudiantes()
+    reiniciar_tarjetas()  # Ahora también borra las tarjetas asignadas
     return render_template('ruleta.html', variables_ruleta=VARIABLES_RULETA)
 
 @app.route('/estudiante')
@@ -180,6 +187,42 @@ def aceptar_estudiante():
         json.dump(estudiantes, f, indent=4)
 
     return jsonify({'message': f'Estudiante {estudiante} aceptado'})
+
+def guardar_tarjeta_estudiante(nombre, opciones):
+    """Guarda la tarjeta generada para un estudiante específico."""
+    estudiantes_tarjetas = {}
+
+    if os.path.exists(BINGO_ESTUDIANTES_FILE):
+        with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
+            estudiantes_tarjetas = json.load(f)
+
+    estudiantes_tarjetas[nombre] = opciones
+
+    with open(BINGO_ESTUDIANTES_FILE, 'w') as f:
+        json.dump(estudiantes_tarjetas, f, indent=4)
+
+@app.route('/obtener-tarjeta', methods=['POST'])
+def obtener_tarjeta():
+    """Devuelve la tarjeta asignada a un estudiante o la genera si no existe."""
+    data = request.get_json()
+    nombre = data.get('estudiante')
+
+    if not nombre:
+        return jsonify({'message': 'Nombre de estudiante requerido'}), 400
+
+    estudiantes_tarjetas = {}
+    if os.path.exists(BINGO_ESTUDIANTES_FILE):
+        with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
+            estudiantes_tarjetas = json.load(f)
+
+    if nombre in estudiantes_tarjetas:
+        return jsonify({'tarjeta': estudiantes_tarjetas[nombre]})
+    
+    # Generar nueva tarjeta si no existe
+    tarjeta = random.sample(RESPUESTAS_TABLA, 15)
+    guardar_tarjeta_estudiante(nombre, tarjeta)
+    
+    return jsonify({'tarjeta': tarjeta})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

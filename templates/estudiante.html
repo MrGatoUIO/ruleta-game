@@ -23,13 +23,17 @@
         }
 
         .bingo-container {
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            /* Cambiado de 3 a 5 columnas */
+            grid-template-rows: repeat(3, 1fr);
+            /* Se especifican 3 filas */
             gap: 10px;
             width: 90vw;
             max-width: 600px;
             justify-content: center;
         }
+
 
         .bingo-cell {
             border: 2px solid #333;
@@ -180,37 +184,46 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ estudiante: nombreEstudiante })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("estado").textContent = "Esperando aprobación del anfitrión...";
-                verificarAprobacion();
-            })
-            .catch(error => console.error("Error:", error));
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("estado").textContent = "Esperando aprobación del anfitrión...";
+                    verificarAprobacion();
+                })
+                .catch(error => console.error("Error:", error));
         }
 
         function verificarAprobacion() {
             setInterval(() => {
                 fetch("/obtener-estudiantes")
-                .then(response => response.json())
-                .then(data => {
-                    const estudiante = data.estudiantes.find(est => est.nombre === nombreEstudiante);
-                    if (estudiante && estudiante.aceptado) {
-                        document.getElementById("espera-container").style.display = "none";
-                        document.getElementById("bingoBoard").style.display = "grid";
-                        document.getElementById("validarBingoBtn").style.display = "block";
-                        generarBingo();
-                    }
-                })
-                .catch(error => console.error("Error:", error));
+                    .then(response => response.json())
+                    .then(data => {
+                        const estudiante = data.estudiantes.find(est => est.nombre === nombreEstudiante);
+                        if (estudiante && estudiante.aceptado) {
+                            document.getElementById("espera-container").style.display = "none";
+                            document.getElementById("bingoBoard").style.display = "grid";
+                            document.getElementById("validarBingoBtn").style.display = "block";
+                            
+                            fetch("/obtener-tarjeta", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ estudiante: nombreEstudiante })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                generarBingo(data.tarjeta);
+                            })
+                            .catch(error => console.error("Error:", error));
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
             }, 3000);
         }
 
-        function generarBingo() {
-            const cantidadCasillas = 15;
-            const opcionesBingo = {{ respuestas_tabla | tojson }};
-            const opcionesSeleccionadas = opcionesBingo.sort(() => 0.5 - Math.random()).slice(0, cantidadCasillas);
+
+        function generarBingo(opcionesSeleccionadas) {
             const bingoBoard = document.getElementById("bingoBoard");
-            
+            bingoBoard.innerHTML = ""; // Limpiar antes de agregar nuevas tarjetas
+
             opcionesSeleccionadas.forEach(opcion => {
                 const cell = document.createElement("div");
                 cell.classList.add("bingo-cell");
@@ -231,11 +244,11 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ respuestas: seleccionadas })
             })
-            .then(response => response.json())
-            .then(data => {
-                mostrarPopup(data.message, data.ganador);
-            })
-            .catch(error => console.error("Error:", error));
+                .then(response => response.json())
+                .then(data => {
+                    mostrarPopup(data.message, data.ganador);
+                })
+                .catch(error => console.error("Error:", error));
         }
 
         function mostrarPopup(mensaje, gano) {
