@@ -186,7 +186,7 @@
             fetch('/obtener-marcador')
                 .then(response => response.json())
                 .then(data => {
-                    let lista = document.getElementById("estudiantes-lista");
+                    let lista = document.getElementById("estudiantes-jugando");
                     lista.innerHTML = ""; // Limpiar la lista antes de actualizarla
 
                     data.jugadores.forEach(jugador => {
@@ -235,7 +235,7 @@
 </body>
 <div id="marcador-container">
     <h3>Estudiantes en partida</h3>
-    <ul id="estudiantes-lista"></ul>
+    <ul id="estudiantes-jugando"></ul>
 </div>
 
 </html>
