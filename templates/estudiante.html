@@ -215,7 +215,6 @@
                             clearInterval(aprobacionIntervalo); // Detenemos la verificación una vez aprobado
                             document.getElementById("espera-container").style.display = "none";
                             document.getElementById("bingoBoard").style.display = "grid";
-                            document.getElementById("validarBingoBtn").style.display = "block";
 
                             fetch("/obtener-tarjeta", {
                                 method: "POST",
