@@ -118,11 +118,17 @@ def validar_ganador():
         variables_salidas = set(json.load(f))
 
     respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas}
+    correctas = len(respuestas_seleccionadas & respuestas_correctas)
 
-    if respuestas_seleccionadas == respuestas_correctas:
-        return jsonify({'message': f'Felicitaciones sigue preparandote!', 'ganador': True})
-    else:
-        return jsonify({'message': 'Vuelve a intentarlo, tu puedes!.', 'ganador': False})
+    es_ganador = correctas == 15
+
+    return jsonify({
+        'message': '¡BINGO! Has ganado 🎉' if es_ganador else 'Algunas respuestas son incorrectas. ¡Sigue intentando! 😕',
+        'ganador': es_ganador,
+        'respuestas_correctas': list(respuestas_correctas), 
+        'correctas': correctas  # Devolvemos la cantidad de respuestas correctas
+    })
+
 
 
 @app.route('/registrar-estudiante', methods=['POST'])

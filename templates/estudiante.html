@@ -63,6 +63,18 @@
             transform: scale(0.95);
         }
 
+        .bingo-cell.correcto {
+            background: linear-gradient(135deg, #4caf50, #81c784);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .bingo-cell.incorrecto {
+            background: linear-gradient(135deg, #ff4500, #ffcc00);
+            color: white;
+            transform: scale(0.95);
+        }
+
         button {
             padding: 15px 30px;
             background-color: #007BFF;
@@ -192,27 +204,30 @@
                 .catch(error => console.error("Error:", error));
         }
 
+        let aprobacionIntervalo; // Variable para detener el intervalo
+
         function verificarAprobacion() {
-            setInterval(() => {
+            aprobacionIntervalo = setInterval(() => {
                 fetch("/obtener-estudiantes")
                     .then(response => response.json())
                     .then(data => {
                         const estudiante = data.estudiantes.find(est => est.nombre === nombreEstudiante);
                         if (estudiante && estudiante.aceptado) {
+                            clearInterval(aprobacionIntervalo); // Detenemos la verificación una vez aprobado
                             document.getElementById("espera-container").style.display = "none";
                             document.getElementById("bingoBoard").style.display = "grid";
                             document.getElementById("validarBingoBtn").style.display = "block";
-                            
+
                             fetch("/obtener-tarjeta", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ estudiante: nombreEstudiante })
                             })
-                            .then(response => response.json())
-                            .then(data => {
-                                generarBingo(data.tarjeta);
-                            })
-                            .catch(error => console.error("Error:", error));
+                                .then(response => response.json())
+                                .then(data => {
+                                    generarBingo(data.tarjeta);
+                                })
+                                .catch(error => console.error("Error:", error));
                         }
                     })
                     .catch(error => console.error("Error:", error));
@@ -242,14 +257,34 @@
             fetch("/validar-ganador", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ respuestas: seleccionadas })
+                body: JSON.stringify({ estudiante: nombreEstudiante })
             })
                 .then(response => response.json())
                 .then(data => {
-                    mostrarPopup(data.message, data.ganador);
+                    // Marcar respuestas correctas e incorrectas
+                    document.querySelectorAll(".bingo-cell").forEach(cell => {
+                        if (seleccionadas.includes(cell.textContent)) {
+                            if (data.respuestas_correctas.includes(cell.textContent)) {
+                                cell.classList.add("correcto");
+                                cell.classList.remove("incorrecto");
+                            } else {
+                                cell.classList.add("incorrecto");
+                                cell.classList.remove("correcto");
+                            }
+                        }
+                    });
+
+                    // Actualizar marcador de jugadores
+                    actualizarMarcador(nombreEstudiante, data.correctas);
+
+                    // Si alguien gana, mostrar mensaje y finalizar juego
+                    if (data.ganador) {
+                        mostrarPopup(`🎉 ¡BINGO! ${nombreEstudiante} ha ganado 🎉`, true);
+                    }
                 })
                 .catch(error => console.error("Error:", error));
         }
+
 
         function mostrarPopup(mensaje, gano) {
             const popup = document.getElementById('popup');
