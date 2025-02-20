@@ -266,6 +266,27 @@ def validar_respuesta():
     es_correcta = respuesta in RESPUESTAS_TABLA
     return jsonify({'correcta': es_correcta})
 
+@app.route('/actualizar-puntaje', methods=['POST'])
+def actualizar_puntaje():
+    """Actualiza el puntaje de un jugador"""
+    data = request.get_json()
+    nombre = data.get('nombre')
+    puntaje = data.get('puntaje')
+
+    if not nombre:
+        return jsonify({'message': 'Nombre de jugador requerido'}), 400
+
+    jugadores = obtener_jugadores()
+
+    for jugador in jugadores:
+        if jugador['nombre'] == nombre:
+            jugador['puntaje'] = puntaje
+            break
+
+    guardar_jugadores(jugadores)
+
+    return jsonify({'message': f'Puntaje de {nombre} actualizado a {puntaje}'}), 200
+
 @app.route('/validar-ganador', methods=['POST'])
 def validar_ganador():
     """Valida si el estudiante ha seleccionado correctamente las respuestas"""
