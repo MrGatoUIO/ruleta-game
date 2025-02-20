@@ -290,10 +290,6 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ nombre: nombreEstudiante, puntaje: data.correctas })
                     })
-                        .then(() => {
-                            cargarMarcadorBingo(); // Refrescar la lista de puntajes
-                            cargarJugadoresRuleta(); // Refrescar la lista en la ruleta
-                        })
                         .catch(error => console.error("Error al actualizar puntaje:", error));
 
                     // Si alguien gana, mostrar mensaje y finalizar juego
