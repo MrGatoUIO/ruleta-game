@@ -233,7 +233,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                mostrarPopup(data.message);
+                mostrarPopup(data.message, data.ganador);
             })
             .catch(error => console.error("Error:", error));
         }
