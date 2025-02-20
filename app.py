@@ -254,6 +254,18 @@ def obtener_marcador():
 
     return jsonify({'jugadores': jugadores})
 
+@app.route('/validar-respuesta', methods=['POST'])
+def validar_respuesta():
+    """Verifica si la respuesta seleccionada es correcta"""
+    data = request.get_json()
+    respuesta = data.get('respuesta')
+
+    if not respuesta:
+        return jsonify({'message': 'Respuesta requerida'}), 400
+
+    es_correcta = respuesta in RESPUESTAS_TABLA
+    return jsonify({'correcta': es_correcta})
+
 @app.route('/validar-ganador', methods=['POST'])
 def validar_ganador():
     """Valida si el estudiante ha seleccionado correctamente las respuestas"""
