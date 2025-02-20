@@ -257,6 +257,48 @@ def validar_respuesta():
 
     return jsonify({'correcta': False}), 200
 
+@app.route('/validar-ganador', methods=['POST'])
+def validar_ganador():
+    """Cuenta cuántas respuestas correctas tiene el estudiante y actualiza su puntaje"""
+    data = request.get_json()
+    nombre = data.get('estudiante')
+    respuestas_seleccionadas = set(data.get('respuestas', []))
+
+    if not nombre or not respuestas_seleccionadas:
+        return jsonify({'message': 'Nombre del estudiante y respuestas requeridas'}), 400
+
+    # Cargar las variables que ya salieron en la ruleta
+    if not os.path.exists(RESULTADOS_FILE):
+        return jsonify({'message': 'No hay resultados en la ruleta'}), 400
+
+    with open(RESULTADOS_FILE, 'r') as f:
+        variables_salidas = set(json.load(f))  # Set de variables que han salido en la ruleta
+
+    # Obtener respuestas correctas basadas en las variables ya salidas
+    respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas if var in VARIABLES_RULETA}
+
+    # Contar cuántas respuestas seleccionadas son correctas
+    correctas = len(respuestas_seleccionadas & respuestas_correctas)
+
+    # Actualizar puntaje en el archivo de estudiantes
+    if os.path.exists(ESTUDIANTES_FILE):
+        with open(ESTUDIANTES_FILE, 'r') as f:
+            estudiantes = json.load(f)
+
+        for est in estudiantes:
+            if est['nombre'] == nombre:
+                est['puntaje'] = correctas  # Guardamos el puntaje actualizado
+                break
+
+        with open(ESTUDIANTES_FILE, 'w') as f:
+            json.dump(estudiantes, f, indent=4)
+        ganador = correctas == 15  # Esto devuelve True si correctas == 15, de lo contrario False
+
+    return jsonify({
+        'message': f'{nombre} tiene {correctas} respuestas correctas',
+        'correctas': correctas,
+        'ganador': ganador  # Devolvemos si ganó o no
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
