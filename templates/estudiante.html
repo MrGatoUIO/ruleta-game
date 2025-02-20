@@ -273,34 +273,6 @@
             });
         }
 
-        function validarSiGano() {
-            const seleccionadas = Array.from(document.querySelectorAll(".bingo-cell.correcto"))
-                .map(cell => cell.textContent);
-
-            fetch("/validar-ganador", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ estudiante: nombreEstudiante, respuestas: seleccionadas })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Actualizar puntaje en el backend
-                    fetch("/actualizar-puntaje", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ nombre: nombreEstudiante, puntaje: data.correctas })
-                    })
-                        .catch(error => console.error("Error al actualizar puntaje:", error));
-
-                    // Si alguien gana, mostrar mensaje y finalizar juego
-                    if (data.ganador) {
-                        mostrarPopup(`🎉 ¡BINGO! ${nombreEstudiante} ha ganado 🎉`, true);
-                    }
-                })
-                .catch(error => console.error("Error:", error));
-        }
-
-
         function actualizarMarcador(nombre, puntaje) {
             let lista = document.getElementById("lista-jugadores");
             let jugadorItem = document.getElementById(`jugador-${nombre}`);

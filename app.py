@@ -87,6 +87,39 @@ def estudiante():
     """Carga la vista del bingo del estudiante"""
     return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
 
+@app.route('/resultados', methods=['GET'])
+def json_resultados():
+    """Devuelve el contenido de resultados.json"""
+    if not os.path.exists(RESULTADOS_FILE):
+        return jsonify({'message': 'El archivo no existe'}), 404
+
+    with open(RESULTADOS_FILE, 'r') as f:
+        data = json.load(f)
+
+    return jsonify(data)
+
+@app.route('/estudiantes', methods=['GET'])
+def json_estudiantes():
+    """Devuelve el contenido de estudiantes.json"""
+    if not os.path.exists(ESTUDIANTES_FILE):
+        return jsonify({'message': 'El archivo no existe'}), 404
+
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        data = json.load(f)
+
+    return jsonify(data)
+
+@app.route('/bingo_estudiantes', methods=['GET'])
+def json_bingo_estudiantes():
+    """Devuelve el contenido de bingo_estudiantes.json"""
+    if not os.path.exists(BINGO_ESTUDIANTES_FILE):
+        return jsonify({'message': 'El archivo no existe'}), 404
+
+    with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
+        data = json.load(f)
+
+    return jsonify(data)
+
 @app.route('/girar', methods=['POST'])
 def girar_ruleta():
     """Selecciona una variable aleatoria y la guarda en resultados.json"""
@@ -200,15 +233,30 @@ def obtener_marcador():
 
 @app.route('/validar-respuesta', methods=['POST'])
 def validar_respuesta():
-    """Verifica si la respuesta seleccionada es correcta"""
+    """Verifica si la respuesta seleccionada es correcta con base en la ruleta"""
     data = request.get_json()
     respuesta = data.get('respuesta')
 
     if not respuesta:
         return jsonify({'message': 'Respuesta requerida'}), 400
 
-    es_correcta = respuesta in RESPUESTAS_TABLA
-    return jsonify({'correcta': es_correcta})
+    # Cargar las variables que ya salieron en la ruleta
+    if not os.path.exists(RESULTADOS_FILE):
+        return jsonify({'message': 'No hay resultados en la ruleta'}), 400
+
+    with open(RESULTADOS_FILE, 'r') as f:
+        variables_salidas = json.load(f)  # Lista de las variables que ya salieron en la ruleta
+
+    # Verificar si la respuesta corresponde con alguna variable ya salida
+    for variable in variables_salidas:
+        if variable in VARIABLES_RULETA:
+            index = VARIABLES_RULETA.index(variable)  # Encontramos el índice de la variable en la lista
+            respuesta_correcta = RESPUESTAS_TABLA[index]  # Obtenemos la respuesta correcta
+            if respuesta == respuesta_correcta:
+                return jsonify({'correcta': True}), 200
+
+    return jsonify({'correcta': False}), 200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
