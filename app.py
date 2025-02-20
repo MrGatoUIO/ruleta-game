@@ -97,6 +97,39 @@ def estudiante():
     """Carga la vista del bingo del estudiante"""
     return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
 
+@app.route('/resultados', methods=['GET'])
+def obtener_resultados():
+    """Devuelve el contenido de resultados.json"""
+    if not os.path.exists(RESULTADOS_FILE):
+        return jsonify({'message': 'El archivo no existe'}), 404
+
+    with open(RESULTADOS_FILE, 'r') as f:
+        data = json.load(f)
+
+    return jsonify(data)
+
+@app.route('/estudiantes', methods=['GET'])
+def obtener_estudiantes():
+    """Devuelve el contenido de estudiantes.json"""
+    if not os.path.exists(ESTUDIANTES_FILE):
+        return jsonify({'message': 'El archivo no existe'}), 404
+
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        data = json.load(f)
+
+    return jsonify(data)
+
+@app.route('/bingo_estudiantes', methods=['GET'])
+def obtener_bingo_estudiantes():
+    """Devuelve el contenido de bingo_estudiantes.json"""
+    if not os.path.exists(BINGO_ESTUDIANTES_FILE):
+        return jsonify({'message': 'El archivo no existe'}), 404
+
+    with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
+        data = json.load(f)
+
+    return jsonify(data)
+
 @app.route('/girar', methods=['POST'])
 def girar_ruleta():
     """Selecciona una variable aleatoria y la guarda"""
