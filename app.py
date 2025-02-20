@@ -90,6 +90,34 @@ def estudiante():
     """Carga la vista del bingo del estudiante"""
     return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
 
+@app.route('/girar', methods=['POST'])
+def girar_ruleta():
+    """Selecciona una variable aleatoria y la guarda"""
+    variable = random.choice(VARIABLES_RULETA)
+    with open(RESULTADOS_FILE, 'r') as f:
+        data = json.load(f)
+    data.append(variable)
+    with open(RESULTADOS_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+    return jsonify({'variable': variable})
+
+@app.route('/validar-ganador', methods=['POST'])
+def validar_ganador():
+    """Valida si el estudiante ha seleccionado correctamente las respuestas"""
+    data = request.get_json()
+    respuestas_seleccionadas = set(data.get('respuestas', []))
+
+    with open(RESULTADOS_FILE, 'r') as f:
+        variables_salidas = set(json.load(f))
+
+    respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas}
+
+    if respuestas_seleccionadas == respuestas_correctas:
+        return jsonify({'message': f'Felicitaciones sigue preparandote!', 'ganador': True})
+    else:
+        return jsonify({'message': 'Vuelve a intentarlo, tu puedes!.', 'ganador': False})
+
+
 @app.route('/registrar-estudiante', methods=['POST'])
 def registrar_estudiante():
     """Registra un nuevo estudiante en la lista de espera"""
