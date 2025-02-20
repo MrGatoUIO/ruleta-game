@@ -81,6 +81,13 @@
         <button onclick="girarRuleta()">Girar</button>
     </div>
 
+    <div id="popup" class="popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 40px; border-radius: 10px; text-align: center; font-size: 24px; z-index: 1000;">
+        <div>
+            <p id="popup-message"></p>
+        </div>
+        <button style="margin-left: 20px;" onclick="cerrarPopup()">Aceptar</button>
+    </div>
+
     <script>
         let estudiantesAceptados = [];
         let partida = false;
