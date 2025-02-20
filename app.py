@@ -5,15 +5,13 @@ from flask import Flask, request, jsonify, render_template
 import random
 
 app = Flask(__name__)
-
 CORS(app)
-# Obtener la ruta absoluta del directorio del script
+
+# Rutas de los archivos JSON
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTADOS_FILE = os.path.join(BASE_DIR, 'resultados.json')
 ESTUDIANTES_FILE = os.path.join(BASE_DIR, 'estudiantes.json')
 BINGO_ESTUDIANTES_FILE = os.path.join(BASE_DIR, 'bingo_estudiantes.json')
-
-# Variables de la ruleta
 
 # Variables de la ruleta
 VARIABLES_RULETA = [
@@ -69,27 +67,19 @@ RESPUESTAS_TABLA = [
     "Mezcla de ira y de tristeza que aparece cuando omitimos responsabilidades"
 ]
 
-def reiniciar_resultados():
-    """Elimina el archivo resultados.json y lo vuelve a crear vacío."""
-    with open(RESULTADOS_FILE, 'w') as f:
-        json.dump([], f, indent=4)
 
-def reiniciar_estudiantes():
-    """Elimina el archivo estudiantes.json y lo vuelve a crear vacío."""
-    with open(ESTUDIANTES_FILE, 'w') as f:
-        json.dump([], f, indent=4)
-
-def reiniciar_tarjetas():
-    """Elimina el archivo bingo_estudiantes.json para reiniciar el juego."""
-    if os.path.exists(BINGO_ESTUDIANTES_FILE):
-        os.remove(BINGO_ESTUDIANTES_FILE)
+# Funciones de reinicio
+def reiniciar_archivo(file_path, default_value=[]):
+    """Crea o vacía un archivo JSON con valores por defecto."""
+    with open(file_path, 'w') as f:
+        json.dump(default_value, f, indent=4)
 
 @app.route('/ruleta')
 def ruleta():
     """Carga la ruleta y reinicia los datos del juego"""
-    reiniciar_resultados()
-    reiniciar_estudiantes()
-    reiniciar_tarjetas()  # Ahora también borra las tarjetas asignadas
+    reiniciar_archivo(RESULTADOS_FILE)
+    reiniciar_archivo(ESTUDIANTES_FILE)
+    reiniciar_archivo(BINGO_ESTUDIANTES_FILE, {})
     return render_template('ruleta.html', variables_ruleta=VARIABLES_RULETA)
 
 @app.route('/estudiante')
@@ -97,74 +87,35 @@ def estudiante():
     """Carga la vista del bingo del estudiante"""
     return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
 
-@app.route('/resultados', methods=['GET'])
-def json_resultados():
-    """Devuelve el contenido de resultados.json"""
-    if not os.path.exists(RESULTADOS_FILE):
-        return jsonify({'message': 'El archivo no existe'}), 404
-
-    with open(RESULTADOS_FILE, 'r') as f:
-        data = json.load(f)
-
-    return jsonify(data)
-
-@app.route('/estudiantes', methods=['GET'])
-def json_estudiantes():
-    """Devuelve el contenido de estudiantes.json"""
-    if not os.path.exists(ESTUDIANTES_FILE):
-        return jsonify({'message': 'El archivo no existe'}), 404
-
-    with open(ESTUDIANTES_FILE, 'r') as f:
-        data = json.load(f)
-
-    return jsonify(data)
-
-@app.route('/bingo_estudiantes', methods=['GET'])
-def json_bingo_estudiantes():
-    """Devuelve el contenido de bingo_estudiantes.json"""
-    if not os.path.exists(BINGO_ESTUDIANTES_FILE):
-        return jsonify({'message': 'El archivo no existe'}), 404
-
-    with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
-        data = json.load(f)
-
-    return jsonify(data)
-
 @app.route('/girar', methods=['POST'])
 def girar_ruleta():
-    """Selecciona una variable aleatoria y la guarda"""
+    """Selecciona una variable aleatoria y la guarda en resultados.json"""
     variable = random.choice(VARIABLES_RULETA)
     with open(RESULTADOS_FILE, 'r') as f:
         data = json.load(f)
     data.append(variable)
-    with open(RESULTADOS_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
+    reiniciar_archivo(RESULTADOS_FILE, data)
     return jsonify({'variable': variable})
 
 @app.route('/registrar-estudiante', methods=['POST'])
 def registrar_estudiante():
     """Registra un nuevo estudiante en la lista de espera"""
     data = request.get_json()
-    estudiante = data.get('estudiante')
+    nombre = data.get('estudiante')
 
-    if not estudiante:
+    if not nombre:
         return jsonify({'message': 'Nombre de estudiante requerido'}), 400
 
-    # Cargar lista actual
     estudiantes = []
     if os.path.exists(ESTUDIANTES_FILE):
         with open(ESTUDIANTES_FILE, 'r') as f:
             estudiantes = json.load(f)
 
-    # Verificar si el estudiante ya existe
-    if any(est['nombre'] == estudiante for est in estudiantes):
+    if any(est['nombre'] == nombre for est in estudiantes):
         return jsonify({'message': 'Estudiante ya registrado'}), 400
 
-    # Agregar nuevo estudiante como pendiente
-    estudiantes.append({'nombre': estudiante, 'aceptado': False})
-
-    with open(ESTUDIANTES_FILE, 'w') as f:
-        json.dump(estudiantes, f, indent=4)
+    estudiantes.append({'nombre': nombre, 'aceptado': False, 'puntaje': 0})
+    reiniciar_archivo(ESTUDIANTES_FILE, estudiantes)
 
     return jsonify({'message': 'Estudiante registrado exitosamente'})
 
@@ -183,62 +134,21 @@ def obtener_estudiantes():
 def aceptar_estudiante():
     """Acepta a un estudiante para que pueda jugar"""
     data = request.get_json()
-    estudiante = data.get('estudiante')
-
-    if not estudiante:
-        return jsonify({'message': 'Nombre de estudiante requerido'}), 400
-
-    if not os.path.exists(ESTUDIANTES_FILE):
-        return jsonify({'message': 'No hay estudiantes registrados'}), 400
-
-    with open(ESTUDIANTES_FILE, 'r') as f:
-        estudiantes = json.load(f)
-
-    for est in estudiantes:
-        if est['nombre'] == estudiante:
-            est['aceptado'] = True
-            break
-
-    with open(ESTUDIANTES_FILE, 'w') as f:
-        json.dump(estudiantes, f, indent=4)
-
-    return jsonify({'message': f'Estudiante {estudiante} aceptado'})
-
-def guardar_tarjeta_estudiante(nombre, opciones):
-    """Guarda la tarjeta generada para un estudiante específico."""
-    estudiantes_tarjetas = {}
-
-    if os.path.exists(BINGO_ESTUDIANTES_FILE):
-        with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
-            estudiantes_tarjetas = json.load(f)
-
-    estudiantes_tarjetas[nombre] = opciones
-
-    with open(BINGO_ESTUDIANTES_FILE, 'w') as f:
-        json.dump(estudiantes_tarjetas, f, indent=4)
-
-@app.route('/obtener-tarjeta', methods=['POST'])
-def obtener_tarjeta():
-    """Devuelve la tarjeta asignada a un estudiante o la genera si no existe."""
-    data = request.get_json()
     nombre = data.get('estudiante')
 
     if not nombre:
         return jsonify({'message': 'Nombre de estudiante requerido'}), 400
 
-    estudiantes_tarjetas = {}
-    if os.path.exists(BINGO_ESTUDIANTES_FILE):
-        with open(BINGO_ESTUDIANTES_FILE, 'r') as f:
-            estudiantes_tarjetas = json.load(f)
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        estudiantes = json.load(f)
 
-    if nombre in estudiantes_tarjetas:
-        return jsonify({'tarjeta': estudiantes_tarjetas[nombre]})
-    
-    # Generar nueva tarjeta si no existe
-    tarjeta = random.sample(RESPUESTAS_TABLA, 15)
-    guardar_tarjeta_estudiante(nombre, tarjeta)
-    
-    return jsonify({'tarjeta': tarjeta})
+    for est in estudiantes:
+        if est['nombre'] == nombre:
+            est['aceptado'] = True
+            break
+
+    reiniciar_archivo(ESTUDIANTES_FILE, estudiantes)
+    return jsonify({'message': f'Estudiante {nombre} aceptado'})
 
 @app.route('/obtener-marcador', methods=['GET'])
 def obtener_marcador():
@@ -249,9 +159,7 @@ def obtener_marcador():
     with open(ESTUDIANTES_FILE, 'r') as f:
         estudiantes = json.load(f)
 
-    # Agregamos puntajes en 0 si aún no existen
-    jugadores = [{'nombre': est['nombre'], 'puntaje': 0} for est in estudiantes if est['aceptado']]
-
+    jugadores = [{'nombre': est['nombre'], 'puntaje': est.get('puntaje', 0)} for est in estudiantes if est['aceptado']]
     return jsonify({'jugadores': jugadores})
 
 @app.route('/validar-respuesta', methods=['POST'])
@@ -265,62 +173,6 @@ def validar_respuesta():
 
     es_correcta = respuesta in RESPUESTAS_TABLA
     return jsonify({'correcta': es_correcta})
-
-@app.route('/actualizar-puntaje', methods=['POST'])
-def actualizar_puntaje():
-    """Actualiza el puntaje de un jugador"""
-    data = request.get_json()
-    nombre = data.get('nombre')
-    puntaje = data.get('puntaje')
-
-    if not nombre:
-        return jsonify({'message': 'Nombre de jugador requerido'}), 400
-
-    jugadores = obtener_jugadores()
-
-    for jugador in jugadores:
-        if jugador['nombre'] == nombre:
-            jugador['puntaje'] = puntaje
-            break
-
-    guardar_jugadores(jugadores)
-
-    return jsonify({'message': f'Puntaje de {nombre} actualizado a {puntaje}'}), 200
-
-@app.route('/validar-ganador', methods=['POST'])
-def validar_ganador():
-    """Valida si el estudiante ha seleccionado correctamente las respuestas"""
-    data = request.get_json()
-    nombre = data.get('estudiante')
-    respuestas_seleccionadas = set(data.get('respuestas', []))
-
-    with open(RESULTADOS_FILE, 'r') as f:
-        variables_salidas = set(json.load(f))
-
-    respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas}
-    correctas = len(respuestas_seleccionadas & respuestas_correctas)
-
-    # Actualizar puntaje en el archivo de estudiantes
-    with open(ESTUDIANTES_FILE, 'r') as f:
-        estudiantes = json.load(f)
-
-    for est in estudiantes:
-        if est['nombre'] == nombre:
-            est['puntaje'] = correctas  # Guardamos el puntaje actualizado
-            break
-
-    with open(ESTUDIANTES_FILE, 'w') as f:
-        json.dump(estudiantes, f, indent=4)
-
-    es_ganador = correctas == 15
-
-    return jsonify({
-        'message': '¡BINGO! Has ganado 🎉' if es_ganador else 'Sigue intentando 🔥',
-        'ganador': es_ganador,
-        'respuestas_correctas': list(respuestas_correctas),
-        'correctas': correctas  # Devolvemos la cantidad de respuestas correctas
-    })
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
