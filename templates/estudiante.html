@@ -285,6 +285,26 @@
                 .catch(error => console.error("Error:", error));
         }
 
+        function actualizarMarcador(nombre, puntaje) {
+            let lista = document.getElementById("lista-jugadores");
+            let jugadorItem = document.getElementById(`jugador-${nombre}`);
+
+            if (!jugadorItem) {
+                jugadorItem = document.createElement("li");
+                jugadorItem.classList.add("jugador-item");
+                jugadorItem.id = `jugador-${nombre}`;
+                jugadorItem.innerHTML = `<span>${nombre}</span> <span class="puntaje">${puntaje}</span>`;
+                lista.appendChild(jugadorItem);
+            } else {
+                jugadorItem.querySelector(".puntaje").textContent = puntaje;
+            }
+
+            // Si el jugador llega a 15, finaliza el juego
+            if (puntaje === 15) {
+                mostrarPopup(`🎉 ¡BINGO! ${nombre} ha ganado 🎉`, true);
+            }
+        }
+
 
         function mostrarPopup(mensaje, gano) {
             const popup = document.getElementById('popup');

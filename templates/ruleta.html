@@ -182,25 +182,24 @@
             }
         }, 3000);
 
-        function actualizarMarcador(nombre, puntaje) {
-            let lista = document.getElementById("lista-jugadores");
-            let jugadorItem = document.getElementById(`jugador-${nombre}`);
+        function cargarJugadoresRuleta() {
+            fetch('/obtener-marcador')
+                .then(response => response.json())
+                .then(data => {
+                    let lista = document.getElementById("estudiantes-lista");
+                    lista.innerHTML = ""; // Limpiar la lista antes de actualizarla
 
-            if (!jugadorItem) {
-                jugadorItem = document.createElement("li");
-                jugadorItem.classList.add("jugador-item");
-                jugadorItem.id = `jugador-${nombre}`;
-                jugadorItem.innerHTML = `<span>${nombre}</span> <span class="puntaje">${puntaje}</span>`;
-                lista.appendChild(jugadorItem);
-            } else {
-                jugadorItem.querySelector(".puntaje").textContent = puntaje;
-            }
-
-            // Si el jugador llega a 15, finaliza el juego
-            if (puntaje === 15) {
-                mostrarPopup(`🎉 ¡BINGO! ${nombre} ha ganado 🎉`, true);
-            }
+                    data.jugadores.forEach(jugador => {
+                        let li = document.createElement("li");
+                        li.textContent = `${jugador.nombre} - Puntos: ${jugador.puntaje}`;
+                        lista.appendChild(li);
+                    });
+                })
+                .catch(error => console.error("Error al cargar jugadores:", error));
         }
+
+        // Recargar lista de jugadores cada 5 segundos
+        setInterval(cargarJugadoresRuleta, 3000);
 
         let currentRotation = 0;
         let sectores = {{ variables_ruleta | tojson }};
@@ -235,8 +234,8 @@
     </script>
 </body>
 <div id="marcador-container">
-    <h3>Jugadores en partida</h3>
-    <ul id="lista-jugadores"></ul>
+    <h3>Estudiantes en partida</h3>
+    <ul id="estudiantes-lista"></ul>
 </div>
 
 </html>

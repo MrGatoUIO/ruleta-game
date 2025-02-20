@@ -230,5 +230,19 @@ def obtener_tarjeta():
     
     return jsonify({'tarjeta': tarjeta})
 
+@app.route('/obtener-marcador', methods=['GET'])
+def obtener_marcador():
+    """Devuelve la lista de estudiantes con su estado y puntaje"""
+    if not os.path.exists(ESTUDIANTES_FILE):
+        return jsonify({'jugadores': []})
+
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        estudiantes = json.load(f)
+
+    # Agregamos puntajes en 0 si aún no existen
+    jugadores = [{'nombre': est['nombre'], 'puntaje': 0} for est in estudiantes if est['aceptado']]
+
+    return jsonify({'jugadores': jugadores})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
