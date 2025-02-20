@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
@@ -23,22 +23,19 @@
         }
 
         .bingo-container {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             width: 90vw;
-            max-width: 800px;
-            /* Más ancho */
+            max-width: 600px;
             justify-content: center;
         }
 
         .bingo-cell {
             border: 2px solid #333;
             padding: 20px;
-            /* Más padding */
             text-align: center;
             font-size: 14px;
-            /* Tamaño de fuente ajustado */
             font-weight: bold;
             background: white;
             cursor: pointer;
@@ -47,11 +44,9 @@
             align-items: center;
             justify-content: center;
             height: 100px;
-            /* Más alto */
             overflow: hidden;
             word-wrap: break-word;
             border-radius: 15px;
-            /* Bordes redondeados */
         }
 
         .bingo-cell:hover {
@@ -121,7 +116,6 @@
             width: 80%;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             animation: jump 0.5s ease;
-            /* Animación de salto */
         }
 
         @keyframes jump {
@@ -152,8 +146,17 @@
 
 <body>
     <h1>Bingo del Estudiante</h1>
+
+    <!-- Pantalla de espera y registro -->
+    <div id="espera-container" class="espera-container">
+        <input type="text" id="nombreEstudiante" placeholder="Ingresa tu nombre">
+        <button onclick="registrarEstudiante()">Registrarse</button>
+        <p id="estado" style="margin-top: 10px; font-weight: bold; color: #FF4500;"></p>
+    </div>
+
+    <!-- Bingo oculto al inicio -->
     <div class="bingo-container" id="bingoBoard"></div>
-    <button onclick="validarBingo()">Validar Bingo</button>
+    <button id="validarBingoBtn" onclick="validarBingo()" style="display: none;">Validar Bingo</button>
 
     <div id="popup" class="popup">
         <div class="popup-content" id="popup-content">
@@ -161,7 +164,7 @@
             <button onclick="cerrarPopup()">Aceptar</button>
         </div>
     </div>
-  
+
     <script>
         let nombreEstudiante = "";
 
@@ -230,7 +233,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                mostrarPopup(data.message);
             })
             .catch(error => console.error("Error:", error));
         }
@@ -255,4 +258,5 @@
         }
     </script>
 </body>
+
 </html>
