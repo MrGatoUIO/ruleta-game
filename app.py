@@ -98,7 +98,7 @@ def estudiante():
     return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
 
 @app.route('/resultados', methods=['GET'])
-def obtener_resultados():
+def json_resultados():
     """Devuelve el contenido de resultados.json"""
     if not os.path.exists(RESULTADOS_FILE):
         return jsonify({'message': 'El archivo no existe'}), 404
@@ -109,7 +109,7 @@ def obtener_resultados():
     return jsonify(data)
 
 @app.route('/estudiantes', methods=['GET'])
-def obtener_estudiantes():
+def json_estudiantes():
     """Devuelve el contenido de estudiantes.json"""
     if not os.path.exists(ESTUDIANTES_FILE):
         return jsonify({'message': 'El archivo no existe'}), 404
@@ -120,7 +120,7 @@ def obtener_estudiantes():
     return jsonify(data)
 
 @app.route('/bingo_estudiantes', methods=['GET'])
-def obtener_bingo_estudiantes():
+def json_bingo_estudiantes():
     """Devuelve el contenido de bingo_estudiantes.json"""
     if not os.path.exists(BINGO_ESTUDIANTES_FILE):
         return jsonify({'message': 'El archivo no existe'}), 404
