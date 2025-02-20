@@ -172,7 +172,6 @@
 
     <!-- Bingo oculto al inicio -->
     <div class="bingo-container" id="bingoBoard"></div>
-    <button id="validarBingoBtn" onclick="validarBingo()" style="display: none;">Validar Bingo</button>
 
     <div id="popup" class="popup">
         <div class="popup-content" id="popup-content">
@@ -243,39 +242,60 @@
                 const cell = document.createElement("div");
                 cell.classList.add("bingo-cell");
                 cell.textContent = opcion;
+
+                // Agregar evento para cambiar color y validar si ganó
                 cell.addEventListener("click", () => {
-                    cell.classList.toggle("selected");
+                    if (cell.classList.contains("correcto") || cell.classList.contains("incorrecto")) {
+                        // Si ya está marcada, la desmarcamos
+                        cell.classList.remove("correcto", "incorrecto", "selected");
+                    } else {
+                        // Verificar si la opción es correcta o incorrecta
+                        fetch("/validar-respuesta", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ respuesta: opcion })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.correcta) {
+                                    cell.classList.add("correcto");
+                                } else {
+                                    cell.classList.add("incorrecto");
+                                }
+
+                                // Verificar si el jugador ha ganado
+                                validarSiGano();
+                            })
+                            .catch(error => console.error("Error:", error));
+                    }
                 });
+
                 bingoBoard.appendChild(cell);
             });
         }
 
-        function validarBingo() {
-            const seleccionadas = Array.from(document.querySelectorAll(".bingo-cell.selected"))
+        function validarSiGano() {
+            const seleccionadas = Array.from(document.querySelectorAll(".bingo-cell.correcto"))
                 .map(cell => cell.textContent);
 
             fetch("/validar-ganador", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ estudiante: nombreEstudiante })
+                body: JSON.stringify({ estudiante: nombreEstudiante, respuestas: seleccionadas })
             })
                 .then(response => response.json())
                 .then(data => {
-                    // Marcar respuestas correctas e incorrectas
-                    document.querySelectorAll(".bingo-cell").forEach(cell => {
-                        if (seleccionadas.includes(cell.textContent)) {
-                            if (data.respuestas_correctas.includes(cell.textContent)) {
-                                cell.classList.add("correcto");
-                                cell.classList.remove("incorrecto");
-                            } else {
-                                cell.classList.add("incorrecto");
-                                cell.classList.remove("correcto");
-                            }
-                        }
-                    });
-
-                    // Actualizar marcador de jugadores
-                    actualizarMarcador(nombreEstudiante, data.correctas);
+                    // Actualizar puntaje en el backend
+                    fetch("/actualizar-puntaje", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ nombre: nombreEstudiante, puntaje: data.correctas })
+                    })
+                        .then(() => {
+                            cargarMarcadorBingo(); // Refrescar la lista de puntajes
+                            cargarJugadoresRuleta(); // Refrescar la lista en la ruleta
+                        })
+                        .catch(error => console.error("Error al actualizar puntaje:", error));
 
                     // Si alguien gana, mostrar mensaje y finalizar juego
                     if (data.ganador) {
@@ -284,6 +304,7 @@
                 })
                 .catch(error => console.error("Error:", error));
         }
+
 
         function actualizarMarcador(nombre, puntaje) {
             let lista = document.getElementById("lista-jugadores");

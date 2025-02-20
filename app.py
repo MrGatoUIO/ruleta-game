@@ -108,29 +108,6 @@ def girar_ruleta():
         json.dump(data, f, indent=4)
     return jsonify({'variable': variable})
 
-@app.route('/validar-ganador', methods=['POST'])
-def validar_ganador():
-    """Valida si el estudiante ha seleccionado correctamente las respuestas"""
-    data = request.get_json()
-    respuestas_seleccionadas = set(data.get('respuestas', []))
-
-    with open(RESULTADOS_FILE, 'r') as f:
-        variables_salidas = set(json.load(f))
-
-    respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas}
-    correctas = len(respuestas_seleccionadas & respuestas_correctas)
-
-    es_ganador = correctas == 15
-
-    return jsonify({
-        'message': '¡BINGO! Has ganado 🎉' if es_ganador else 'Algunas respuestas son incorrectas. ¡Sigue intentando! 😕',
-        'ganador': es_ganador,
-        'respuestas_correctas': list(respuestas_correctas), 
-        'correctas': correctas  # Devolvemos la cantidad de respuestas correctas
-    })
-
-
-
 @app.route('/registrar-estudiante', methods=['POST'])
 def registrar_estudiante():
     """Registra un nuevo estudiante en la lista de espera"""
@@ -243,6 +220,41 @@ def obtener_marcador():
     jugadores = [{'nombre': est['nombre'], 'puntaje': 0} for est in estudiantes if est['aceptado']]
 
     return jsonify({'jugadores': jugadores})
+
+@app.route('/validar-ganador', methods=['POST'])
+def validar_ganador():
+    """Valida si el estudiante ha seleccionado correctamente las respuestas"""
+    data = request.get_json()
+    nombre = data.get('estudiante')
+    respuestas_seleccionadas = set(data.get('respuestas', []))
+
+    with open(RESULTADOS_FILE, 'r') as f:
+        variables_salidas = set(json.load(f))
+
+    respuestas_correctas = {RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)] for var in variables_salidas}
+    correctas = len(respuestas_seleccionadas & respuestas_correctas)
+
+    # Actualizar puntaje en el archivo de estudiantes
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        estudiantes = json.load(f)
+
+    for est in estudiantes:
+        if est['nombre'] == nombre:
+            est['puntaje'] = correctas  # Guardamos el puntaje actualizado
+            break
+
+    with open(ESTUDIANTES_FILE, 'w') as f:
+        json.dump(estudiantes, f, indent=4)
+
+    es_ganador = correctas == 15
+
+    return jsonify({
+        'message': '¡BINGO! Has ganado 🎉' if es_ganador else 'Sigue intentando 🔥',
+        'ganador': es_ganador,
+        'respuestas_correctas': list(respuestas_correctas),
+        'correctas': correctas  # Devolvemos la cantidad de respuestas correctas
+    })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
