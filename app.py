@@ -85,6 +85,11 @@ def ruleta():
     reiniciar_estudiantes()
     return render_template('ruleta.html', variables_ruleta=VARIABLES_RULETA)
 
+@app.route('/estudiante')
+def estudiante():
+    """Carga la vista del bingo del estudiante"""
+    return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
+
 @app.route('/registrar-estudiante', methods=['POST'])
 def registrar_estudiante():
     """Registra un nuevo estudiante en la lista de espera"""
