@@ -122,13 +122,32 @@ def json_bingo_estudiantes():
 
 @app.route('/girar', methods=['POST'])
 def girar_ruleta():
-    """Selecciona una variable aleatoria y la guarda en resultados.json"""
-    variable = random.choice(VARIABLES_RULETA)
-    with open(RESULTADOS_FILE, 'r') as f:
-        data = json.load(f)
-    data.append(variable)
-    reiniciar_archivo(RESULTADOS_FILE, data)
+    """Selecciona una variable aleatoria que no haya salido antes y la guarda en resultados.json"""
+    
+    # Cargar las variables que ya salieron en la ruleta
+    if os.path.exists(RESULTADOS_FILE):
+        with open(RESULTADOS_FILE, 'r') as f:
+            variables_salidas = json.load(f)
+    else:
+        variables_salidas = []
+
+    # Filtrar las variables disponibles
+    variables_disponibles = [var for var in VARIABLES_RULETA if var not in variables_salidas]
+
+    # Verificar si aún quedan variables por salir
+    if not variables_disponibles:
+        return jsonify({'message': 'Todas las variables ya han salido, no se puede girar más'}), 400
+
+    # Seleccionar una variable aleatoria de las disponibles
+    variable = random.choice(variables_disponibles)
+    variables_salidas.append(variable)
+
+    # Guardar el resultado actualizado
+    with open(RESULTADOS_FILE, 'w') as f:
+        json.dump(variables_salidas, f, indent=4)
+
     return jsonify({'variable': variable})
+
 
 @app.route('/registrar-estudiante', methods=['POST'])
 def registrar_estudiante():
