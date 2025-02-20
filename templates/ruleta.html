@@ -3,21 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruleta</title>
+    <title>Ruleta - Anfitrión</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ruleta.css') }}">
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #espera-container, #ruleta-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #estudiantes-lista {
+            margin-top: 20px;
+            text-align: left;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .boton-aceptar {
+            padding: 10px;
+            margin-left: 10px;
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #ruleta-container {
+            display: none;
+            text-align: center;
+        }
+
         #ruleta {
             transition: transform 3s ease-out;
         }
     </style>
 </head>
 <body>
-    <h1>Ruleta de la Suerte</h1>
-    <br>
-    <br>
+    <h1>Ruleta - Anfitrión</h1>
+    
+    <div id="espera-container">
+        <h2>Esperando Estudiantes...</h2>
+        <ul id="estudiantes-lista"></ul>
+        <button id="iniciar-juego" onclick="iniciarJuego()" style="display: none;">Iniciar Juego</button>
+    </div>
+
     <div id="ruleta-container">
-        <div id="pointer"></div>
+        <h2>Ruleta de la Suerte</h2>
         <div id="ruleta">
             {% for i in range(8) %}
                 <div class="sector" style="transform: rotate({{ i * 45 }}deg); background-color: {{ ['#FFD700', '#FF4500', '#1E90FF', '#32CD32', '#FF69B4', '#8A2BE2', '#FF6347', '#4682B4'][i] }};">
@@ -25,48 +77,54 @@
                 </div>
             {% endfor %}
         </div>
+        <br>
+        <button onclick="girarRuleta()">Girar</button>
     </div>
-    <br>
-    <button onclick="girarRuleta()">Girar</button>
-    
-    <div id="popup" class="popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 40px; border-radius: 10px; text-align: center; font-size: 24px; z-index: 1000;">
-        <div>
-            <p id="popup-message"></p>
-        </div>
-        <button style="margin-left: 20px;" onclick="cerrarPopup()">Aceptar</button>
-    </div>
-    
-    <script>
-        let currentRotation = 0;
-        let sectores = {{ variables_ruleta | tojson }};
 
-        function girarRuleta() {
-            fetch('/girar', { method: 'POST' })
+    <script>
+        let estudiantesAceptados = [];
+
+        function cargarEstudiantes() {
+            fetch('/obtener-estudiantes')
                 .then(response => response.json())
                 .then(data => {
-                    let index = sectores.indexOf(data.variable);
-                    let gradosPorSector = 360 / sectores.length;
-                    let nuevaRotacion = (360 - (index * gradosPorSector)) + (5 * 360);
-                    currentRotation += nuevaRotacion;
-                    
-                    let ruleta = document.getElementById("ruleta");
-                    ruleta.style.transition = "transform 3s ease-out";
-                    ruleta.style.transform = `rotate(${currentRotation}deg)`;
-                    
-                    setTimeout(() => mostrarPopup(data.variable), 3000);
-                });
+                    let lista = document.getElementById('estudiantes-lista');
+                    lista.innerHTML = '';
+                    data.estudiantes.forEach(est => {
+                        if (!est.aceptado) {
+                            let li = document.createElement('li');
+                            li.textContent = est.nombre;
+                            let btn = document.createElement('button');
+                            btn.textContent = 'Aceptar';
+                            btn.classList.add('boton-aceptar');
+                            btn.onclick = () => aceptarEstudiante(est.nombre);
+                            li.appendChild(btn);
+                            lista.appendChild(li);
+                        }
+                    });
+                    document.getElementById('iniciar-juego').style.display = data.estudiantes.some(est => est.aceptado) ? 'block' : 'none';
+                })
+                .catch(error => console.error('Error:', error));
         }
-        
-        function mostrarPopup(variable) {
-            let popup = document.getElementById('popup');
-            let popupMessage = document.getElementById('popup-message');
-            popupMessage.textContent = variable;
-            popup.style.display = 'flex';
+
+        function aceptarEstudiante(nombre) {
+            fetch('/aceptar-estudiante', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estudiante: nombre })
+            })
+            .then(response => response.json())
+            .then(() => cargarEstudiantes())
+            .catch(error => console.error('Error:', error));
         }
-        
-        function cerrarPopup() {
-            document.getElementById('popup').style.display = 'none';
+
+        function iniciarJuego() {
+            document.getElementById('espera-container').style.display = 'none';
+            document.getElementById('ruleta-container').style.display = 'block';
         }
+
+        // Cargar estudiantes al iniciar
+        setInterval(cargarEstudiantes, 3000);
     </script>
 </body>
 </html>

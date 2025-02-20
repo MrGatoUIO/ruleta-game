@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,15 +27,18 @@
             grid-template-columns: repeat(5, 1fr);
             gap: 10px;
             width: 90vw;
-            max-width: 800px; /* Más ancho */
+            max-width: 800px;
+            /* Más ancho */
             justify-content: center;
         }
 
         .bingo-cell {
             border: 2px solid #333;
-            padding: 20px; /* Más padding */
+            padding: 20px;
+            /* Más padding */
             text-align: center;
-            font-size: 14px; /* Tamaño de fuente ajustado */
+            font-size: 14px;
+            /* Tamaño de fuente ajustado */
             font-weight: bold;
             background: white;
             cursor: pointer;
@@ -42,10 +46,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100px; /* Más alto */
+            height: 100px;
+            /* Más alto */
             overflow: hidden;
             word-wrap: break-word;
-            border-radius: 15px; /* Bordes redondeados */
+            border-radius: 15px;
+            /* Bordes redondeados */
         }
 
         .bingo-cell:hover {
@@ -71,6 +77,17 @@
 
         button:hover {
             background-color: #0056b3;
+        }
+
+        .espera-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .popup {
@@ -103,13 +120,22 @@
             max-width: 500px;
             width: 80%;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            animation: jump 0.5s ease; /* Animación de salto */
+            animation: jump 0.5s ease;
+            /* Animación de salto */
         }
 
         @keyframes jump {
-            0% { transform: scale(0); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .popup-content.ganador {
@@ -123,6 +149,7 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Bingo del Estudiante</h1>
     <div class="bingo-container" id="bingoBoard"></div>
@@ -134,53 +161,78 @@
             <button onclick="cerrarPopup()">Aceptar</button>
         </div>
     </div>
-
+  
     <script>
-        function obtenerOpcionesAleatorias(array, cantidad) {
-            let copiaArray = [...array];
-            let seleccionadas = [];
-            for (let i = 0; i < cantidad; i++) {
-                const index = Math.floor(Math.random() * copiaArray.length);
-                seleccionadas.push(copiaArray[index]);
-                copiaArray.splice(index, 1);
-            }
-            return seleccionadas;
-        }
+        let nombreEstudiante = "";
 
-        const cantidadCasillas = 25;
-        const opcionesBingo = {{ respuestas_tabla | tojson }};
-        const opcionesSeleccionadas = obtenerOpcionesAleatorias(opcionesBingo, cantidadCasillas);
-        const bingoBoard = document.getElementById('bingoBoard');
-
-        opcionesSeleccionadas.forEach(opcion => {
-            const cell = document.createElement('div');
-            cell.classList.add('bingo-cell');
-            cell.textContent = opcion;
-            cell.addEventListener('click', () => {
-                cell.classList.toggle('selected');
-            });
-            bingoBoard.appendChild(cell);
-        });
-
-        function validarBingo() {
-            const seleccionadas = Array.from(document.querySelectorAll('.bingo-cell.selected'))
-                .map(cell => cell.textContent);
-
-            if (seleccionadas.length === 0) {
-                alert("Debes seleccionar al menos una opción antes de validar.");
+        function registrarEstudiante() {
+            nombreEstudiante = document.getElementById("nombreEstudiante").value.trim();
+            if (!nombreEstudiante) {
+                alert("Por favor ingrese un nombre");
                 return;
             }
 
-            fetch('/validar-ganador', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            fetch("/registrar-estudiante", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ estudiante: nombreEstudiante })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("estado").textContent = "Esperando aprobación del anfitrión...";
+                verificarAprobacion();
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function verificarAprobacion() {
+            setInterval(() => {
+                fetch("/obtener-estudiantes")
+                .then(response => response.json())
+                .then(data => {
+                    const estudiante = data.estudiantes.find(est => est.nombre === nombreEstudiante);
+                    if (estudiante && estudiante.aceptado) {
+                        document.getElementById("espera-container").style.display = "none";
+                        document.getElementById("bingoBoard").style.display = "grid";
+                        document.getElementById("validarBingoBtn").style.display = "block";
+                        generarBingo();
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            }, 3000);
+        }
+
+        function generarBingo() {
+            const cantidadCasillas = 15;
+            const opcionesBingo = {{ respuestas_tabla | tojson }};
+            const opcionesSeleccionadas = opcionesBingo.sort(() => 0.5 - Math.random()).slice(0, cantidadCasillas);
+            const bingoBoard = document.getElementById("bingoBoard");
+            
+            opcionesSeleccionadas.forEach(opcion => {
+                const cell = document.createElement("div");
+                cell.classList.add("bingo-cell");
+                cell.textContent = opcion;
+                cell.addEventListener("click", () => {
+                    cell.classList.toggle("selected");
+                });
+                bingoBoard.appendChild(cell);
+            });
+        }
+
+        function validarBingo() {
+            const seleccionadas = Array.from(document.querySelectorAll(".bingo-cell.selected"))
+                .map(cell => cell.textContent);
+
+            fetch("/validar-ganador", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ respuestas: seleccionadas })
             })
             .then(response => response.json())
             .then(data => {
-                mostrarPopup(data.message, data.ganador);
+                alert(data.message);
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error("Error:", error));
         }
 
         function mostrarPopup(mensaje, gano) {

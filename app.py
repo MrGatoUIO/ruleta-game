@@ -10,6 +10,9 @@ CORS(app)
 # Obtener la ruta absoluta del directorio del script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTADOS_FILE = os.path.join(BASE_DIR, 'resultados.json')
+ESTUDIANTES_FILE = os.path.join(BASE_DIR, 'estudiantes.json')
+
+# Variables de la ruleta
 
 # Variables de la ruleta
 VARIABLES_RULETA = [
@@ -70,78 +73,80 @@ def reiniciar_resultados():
     with open(RESULTADOS_FILE, 'w') as f:
         json.dump([], f, indent=4)
 
+def reiniciar_estudiantes():
+    """Elimina el archivo estudiantes.json y lo vuelve a crear vacío."""
+    with open(ESTUDIANTES_FILE, 'w') as f:
+        json.dump([], f, indent=4)
+
 @app.route('/ruleta')
 def ruleta():
-    """Carga la ruleta y reinicia los resultados"""
+    """Carga la ruleta y reinicia los resultados y la lista de estudiantes"""
     reiniciar_resultados()
+    reiniciar_estudiantes()
     return render_template('ruleta.html', variables_ruleta=VARIABLES_RULETA)
 
-@app.route('/estudiante')
-def estudiante():
-    """Carga la vista del bingo del estudiante"""
-    return render_template('estudiante.html', respuestas_tabla=RESPUESTAS_TABLA)
-
-@app.route('/girar', methods=['POST'])
-def girar_ruleta():
-    """Selecciona una variable aleatoria y la guarda sin repetir"""
-    with open(RESULTADOS_FILE, 'r') as f:
-        data = json.load(f)
-
-    # Filtrar las variables que aún no han salido
-    opciones_disponibles = [var for var in VARIABLES_RULETA if var not in data]
-
-    if not opciones_disponibles:
-        return jsonify({'message': 'Todas las Emociones ya han salido.', 'variable': None}), 400
-
-    variable = random.choice(opciones_disponibles)  # Elegir una variable que no haya salido
-    data.append(variable)  # Guardar en la lista de resultados
-
-    with open(RESULTADOS_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
-    return jsonify({'variable': variable})
-
-@app.route('/validar-ganador', methods=['POST'])
-def validar_ganador():
-    """Valida si el estudiante ha seleccionado correctamente las respuestas"""
+@app.route('/registrar-estudiante', methods=['POST'])
+def registrar_estudiante():
+    """Registra un nuevo estudiante en la lista de espera"""
     data = request.get_json()
-    respuestas_seleccionadas = set(data.get('respuestas', []))  # Respuestas elegidas por el estudiante
+    estudiante = data.get('estudiante')
 
-    if len(respuestas_seleccionadas) != 25:
-        return jsonify({'message': 'Debes seleccionar todas las respuestas.', 'ganador': False})
+    if not estudiante:
+        return jsonify({'message': 'Nombre de estudiante requerido'}), 400
 
-    
-    # Cargar las variables obtenidas en la ruleta
-    with open(RESULTADOS_FILE, 'r') as f:
-        variables_salidas = set(json.load(f))  # Variables que salieron en la ruleta
+    # Cargar lista actual
+    estudiantes = []
+    if os.path.exists(ESTUDIANTES_FILE):
+        with open(ESTUDIANTES_FILE, 'r') as f:
+            estudiantes = json.load(f)
 
-    # Convertir las variables en respuestas correctas
-    respuestas_correctas = {
-        RESPUESTAS_TABLA[VARIABLES_RULETA.index(var)]
-        for var in variables_salidas if var in VARIABLES_RULETA
-    }
+    # Verificar si el estudiante ya existe
+    if any(est['nombre'] == estudiante for est in estudiantes):
+        return jsonify({'message': 'Estudiante ya registrado'}), 400
 
-    print(f"🟢 Respuestas seleccionadas: {respuestas_seleccionadas}")
-    print(f"🔵 Respuestas correctas esperadas: {respuestas_correctas}")
+    # Agregar nuevo estudiante como pendiente
+    estudiantes.append({'nombre': estudiante, 'aceptado': False})
 
-    # Verificar si todas las respuestas del estudiante están dentro de las respuestas correctas
-    if respuestas_seleccionadas.issubset(respuestas_correctas):  
-        return jsonify({'message': '¡Felicitaciones sigue preparándote!', 'ganador': True})
-    else:
-        return jsonify({'message': 'Vuelve a intentarlo, ¡tú puedes!', 'ganador': False})
+    with open(ESTUDIANTES_FILE, 'w') as f:
+        json.dump(estudiantes, f, indent=4)
 
+    return jsonify({'message': 'Estudiante registrado exitosamente'})
 
-def leer_resultados():
-    """Lee los resultados almacenados en resultados.json"""
-    if os.path.exists(RESULTADOS_FILE):
-        with open(RESULTADOS_FILE, 'r') as f:
-            return json.load(f)
-    return []
+@app.route('/obtener-estudiantes', methods=['GET'])
+def obtener_estudiantes():
+    """Devuelve la lista de estudiantes en espera"""
+    if not os.path.exists(ESTUDIANTES_FILE):
+        return jsonify({'estudiantes': []})
 
-@app.route('/resultados', methods=['GET'])
-def obtener_resultados():
-    """Devuelve la lista de resultados almacenados"""
-    return jsonify(leer_resultados())
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        estudiantes = json.load(f)
+
+    return jsonify({'estudiantes': estudiantes})
+
+@app.route('/aceptar-estudiante', methods=['POST'])
+def aceptar_estudiante():
+    """Acepta a un estudiante para que pueda jugar"""
+    data = request.get_json()
+    estudiante = data.get('estudiante')
+
+    if not estudiante:
+        return jsonify({'message': 'Nombre de estudiante requerido'}), 400
+
+    if not os.path.exists(ESTUDIANTES_FILE):
+        return jsonify({'message': 'No hay estudiantes registrados'}), 400
+
+    with open(ESTUDIANTES_FILE, 'r') as f:
+        estudiantes = json.load(f)
+
+    for est in estudiantes:
+        if est['nombre'] == estudiante:
+            est['aceptado'] = True
+            break
+
+    with open(ESTUDIANTES_FILE, 'w') as f:
+        json.dump(estudiantes, f, indent=4)
+
+    return jsonify({'message': f'Estudiante {estudiante} aceptado'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
